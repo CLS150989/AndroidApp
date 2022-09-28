@@ -63,8 +63,6 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-
-
     listViewPersonas.setOnItemClickListener(new AdapterView.OnItemClickListener() {
         @Override
         public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
@@ -100,9 +98,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
+    //leyendo desde Firebase-RTDB
     private void listarPersonas(){
-        databaseReference.child("Personas").addValueEventListener(new ValueEventListener() {
+        databaseReference.child("Personas").orderByChild("timestamp").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot snapshot) {
                 listPersona.clear();
@@ -110,14 +108,18 @@ public class MainActivity extends AppCompatActivity {
                     Persona p = objSnapshot.getValue(Persona.class);
                     listPersona.add(p);
                 }
-                //iniciar adaptador propio
+                //iniciar adaptador proopio
+                listViewPersonasAdapter = new ListViewPersonasAdapter(MainActivity.this, listPersona);
+                listViewPersonas.setAdapter(listViewPersonasAdapter);
+
+                /***
                 arrayAdapterPersona = new ArrayAdapter<Persona>(
                         MainActivity.this,
                         android.R.layout.simple_list_item_1,
                         listPersona
-                );
+                 listViewPersonas.setAdapter(arrayAdapterPersona);
+                ); **/
 
-                listViewPersonas.setAdapter(arrayAdapterPersona);
             }
             @Override
             public void onCancelled(@NonNull DatabaseError error) {
@@ -126,6 +128,8 @@ public class MainActivity extends AppCompatActivity {
             }
         });
     }
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
@@ -134,15 +138,43 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
-
         String nombres = inputNombre.getText().toString();
         String telefono = inputTelefono.getText().toString();
         switch (item.getItemId()){
             case R.id.menu_agregar:
                 insertar();
                 break;
-        }
+            case R.id.menu_guardar:
+                if(personaSeleccionada != null){
+                    if(validarInputs()==false){
+                         Persona p = new Persona();
+                         p.setIdpersona(personaSeleccionada.getIdpersona());
+                         p.setNombres(nombres);
+                         p.setTelefono(telefono);
+                         p.setFecharegistro(personaSeleccionada.getFecharegistro());
+                         p.setTimestamp(personaSeleccionada.getTimestamp());
+                         databaseReference.child("Personas").child(p.getIdpersona()).setValue(p);
+                         Toast.makeText(this, "Updated correctly", Toast.LENGTH_LONG).show();
+                         linearLayoutEditar.setVisibility(View.GONE);
+                         personaSeleccionada = null;
+                    }
+                }else{
+                        Toast.makeText(this, "Select a person", Toast.LENGTH_LONG).show();
+                }
+            case R.id.menu_eliminar:
+                if(personaSeleccionada != null){
+                    Persona p2 = new Persona();
+                    p2.setIdpersona(personaSeleccionada.getIdpersona());
+                    databaseReference.child("Personas").child(p2.getIdpersona()).removeValue();
+                    linearLayoutEditar.setVisibility(View.GONE);
+                    personaSeleccionada = null;
+                    Toast.makeText(this, "Contact eliminated correctly", Toast.LENGTH_LONG).show();
+                }else {
+                    Toast.makeText(this, "select a person to eliminate", Toast.LENGTH_LONG).show();
 
+                }
+
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -177,7 +209,9 @@ public class MainActivity extends AppCompatActivity {
                       p.setTimestamp(getFechaMilisegundos()* -1);
              databaseReference.child("Personas").child(p.getIdpersona()).setValue(p);
         Toast.makeText(MainActivity.this, "REGISTERED CORRECTLY", Toast.LENGTH_LONG).show();
+                  dialog.dismiss();
                   }
+
             }
         });
     }
@@ -201,5 +235,18 @@ public class MainActivity extends AppCompatActivity {
         return fecha;
     }
 
+    public  boolean validarInputs(){
+        String nombre = inputNombre.getText().toString();
+        String telefono = inputTelefono.getText().toString();
+        if(nombre.isEmpty() || nombre.length() < 3 ){
+            showError(inputNombre, "Invalid Name, min. 3 characters");
+            return true;
+        }else if(telefono.isEmpty() || telefono.length() < 3){
+            showError(inputTelefono, "Invalid phone (min. 3 numbers)");
+            return true;
+        } else {
+            return false;
+        }
+    }
 
 }

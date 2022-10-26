@@ -1,9 +1,11 @@
 package com.example.hifirebase;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
@@ -20,7 +22,10 @@ import android.widget.Toast;
 
 import com.example.hifirebase.Adaptadores.ListViewPersonasAdapter;
 import com.example.hifirebase.Models.Persona;
+import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -29,6 +34,7 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -47,6 +53,12 @@ public class MainActivity extends AppCompatActivity {
    FirebaseDatabase firebaseDatabase;
    DatabaseReference databaseReference;
 
+    //variables para la instancia de Firebase
+    // y para el listener dinámico de cualquier cambio inicio o cierre de sessión
+
+    private FirebaseAuth mFirebaseAuth;
+    private FirebaseAuth.AuthStateListener mAuthStateListener;
+    private static final int RC_SIGN_IN = 123 ;
 
 
 
@@ -54,6 +66,38 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        //obteniendo la instancia de Firebase Auth
+        mFirebaseAuth = FirebaseAuth.getInstance();
+
+        // craando el  método listener dinámico de firebase para
+        // inicio y cierre de sesión en Firebase
+        mAuthStateListener = new FirebaseAuth.AuthStateListener() {
+            @Override
+            public void onAuthStateChanged(@NonNull FirebaseAuth firebaseAuth) {
+                FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                //comprobando si el usuario está logeado
+                if (user != null) {
+
+                } else {
+                    //despliegue de los proveedores de autenticación disponibles
+                    startActivityForResult(AuthUI.getInstance()
+                            .createSignInIntentBuilder()
+                            .setIsSmartLockEnabled(false).setTosUrl("privacy policy")
+                            .setAvailableProviders(Arrays.asList(new AuthUI.IdpConfig.EmailBuilder()
+                                    .build())).build(), RC_SIGN_IN);
+
+                }
+
+            }
+
+
+        };
+
+
+
+
+
 
         inputNombre = findViewById(R.id.inputNombre);
         inputTelefono = findViewById(R.id.inputTelefono);
@@ -88,6 +132,24 @@ public class MainActivity extends AppCompatActivity {
         inicializarFirebase();
         listarPersonas();
     }
+
+
+    //métodos para el estado de la actividad se deben escribir siempre fuera del método principal onCreate
+    //método que informa sobre si la operación de startActivityResult ha sido exitosa
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == RC_SIGN_IN ){
+            if(resultCode == RESULT_OK ){
+                Toast.makeText(this, "Welcome...", Toast.LENGTH_LONG).show();
+            }else{
+                Toast.makeText(this, "Something went wrong...", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+
+
 
 
     private void inicializarFirebase(){
@@ -248,5 +310,32 @@ public class MainActivity extends AppCompatActivity {
             return false;
         }
     }
+
+    //Método onResume se usa cuando el usuario reanuda la actividad en la applicación
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //Escuchando la actividad del usuario cuando otra actividad se pasa a primer plano
+        mFirebaseAuth.addAuthStateListener(mAuthStateListener);
+    }
+
+
+
+
+
+
+    //método onPause se usa cuando otra actividad del usuario se antepone en primer plano
+    @Override
+    protected void onPause() {
+        super.onPause();
+        //verificar si el usuario sigue logueado
+        if (mFirebaseAuth != null){
+            mFirebaseAuth.removeAuthStateListener(mAuthStateListener);
+        }
+
+    }
+
+
+
 
 }

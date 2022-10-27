@@ -22,4 +22,11 @@
         android:title="Eliminar"
         app:showAsAction="always"/>
 
+    <item
+        android:id="@+id/menu_logOut"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="Eliminar"
+        app:showAsAction="always"/>
+
+
 </menu>

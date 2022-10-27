@@ -52,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
    Persona personaSeleccionada;
    FirebaseDatabase firebaseDatabase;
    DatabaseReference databaseReference;
+   Button logOut;
 
     //variables para la instancia de Firebase
     // y para el listener dinámico de cualquier cambio inicio o cierre de sessión
@@ -198,6 +199,9 @@ public class MainActivity extends AppCompatActivity {
         return super.onCreateOptionsMenu(menu);
     }
 
+
+
+    //metodo para seleccion de menús
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         String nombres = inputNombre.getText().toString();
@@ -235,7 +239,8 @@ public class MainActivity extends AppCompatActivity {
                     Toast.makeText(this, "select a person to eliminate", Toast.LENGTH_LONG).show();
 
                 }
-
+            case R.id.menu_logOut:
+                FirebaseAuth.getInstance().signOut();
         }
         return super.onOptionsItemSelected(item);
     }
